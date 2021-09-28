@@ -1,15 +1,15 @@
+import os
+from datetime import date
+from functools import wraps
 from flask import Flask, render_template, redirect, url_for, flash, abort
 from flask_bootstrap import Bootstrap
 from flask_ckeditor import CKEditor
-from datetime import date
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import relationship
-from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
-from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
 from flask_gravatar import Gravatar
-from functools import wraps
-import os
+from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+from flask_sqlalchemy import SQLAlchemy
+from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
+from sqlalchemy.orm import relationship
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
@@ -52,7 +52,7 @@ class BlogPost(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     author = relationship("User", back_populates="posts")
     title = db.Column(db.String(250), unique=True, nullable=False)
-    subtitle = db.Column(db.String(250), nullable=False)
+    intro = db.Column(db.String(250), nullable=False)
     date = db.Column(db.String(250), nullable=False)
     body = db.Column(db.Text, nullable=False)
     img_url = db.Column(db.String(250), nullable=False)
@@ -69,7 +69,7 @@ class Comment(db.Model):
     text = db.Column(db.Text, nullable=False)
 
 
-db.create_all()
+# db.create_all()
 
 
 def admin_only(function):
@@ -161,17 +161,12 @@ def show_post(post_id):
             db.session.add(new_comment)
             db.session.commit()
             return redirect(url_for("show_post", post_id=requested_post.id))
-    return render_template("post.html", post=requested_post, form=form)
+    return render_template("blog-post.html", post=requested_post, form=form)
 
 
 @app.route("/about")
 def about():
     return render_template("about.html")
-
-
-@app.route("/contact")
-def contact():
-    return render_template("contact.html")
 
 
 @app.route("/new-post", methods=["GET", "POST"])
@@ -181,7 +176,7 @@ def add_new_post():
     if form.validate_on_submit():
         new_post = BlogPost(
             title=form.title.data,
-            subtitle=form.subtitle.data,
+            intro=form.intro.data,
             body=form.body.data,
             img_url=form.img_url.data,
             author=current_user,
@@ -199,14 +194,14 @@ def edit_post(post_id):
     post = BlogPost.query.get(post_id)
     edit_form = CreatePostForm(
         title=post.title,
-        subtitle=post.subtitle,
+        intro=post.intro,
         img_url=post.img_url,
         author=post.author.name,
         body=post.body
     )
     if edit_form.validate_on_submit():
         post.title = edit_form.title.data
-        post.subtitle = edit_form.subtitle.data
+        post.intro = edit_form.intro.data
         post.img_url = edit_form.img_url.data
         post.body = edit_form.body.data
         db.session.commit()
